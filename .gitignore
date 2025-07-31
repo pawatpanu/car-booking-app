@@ -1,7 +1,23 @@
-.vscode/
-*.log
-*.zip
-*.tar
-node_modules/
+*.zip            # ไม่เก็บไฟล์ zip
+*.tar            # ไม่เก็บไฟล์ archive tar
+node_modules/    # (ใช้กับ Node.js) ไม่เก็บ dependencies
+.DS_Store        # ไฟล์ระบบ macOS
+Thumbs.db        # ไฟล์ระบบ Windows
+
+# PHP config
+notify_config.php  # ไม่เก็บไฟล์ที่มี client_id/secret
+.env               # ไม่เก็บไฟล์ environment
+
+# System
 .DS_Store
 Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log              # ไม่เก็บไฟล์บันทึก log
+
+# Composer dependencies (ถ้าใช้ PHP Composer)
+vendor/
