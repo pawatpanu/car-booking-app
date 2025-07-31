@@ -2,45 +2,24 @@
 session_start();
 require 'db.php';
 
-// ตรวจสอบสิทธิ์ (สมมติว่าผู้ใช้ admin มี user_id = 1)
-if (!isset($_SESSION['user_id']) || $_SESSION['user_id'] != 1) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit;
 }
+$user_id = intval($_SESSION['user_id']);
 
-$msg = '';
-// อัปเดตสถานะการจอง (ใช้ prepared statement)
-if (isset($_POST['approve'])) {
-    $id = intval($_POST['approve']);
-    $stmt = $conn->prepare("UPDATE bookings SET status='approved' WHERE id=?");
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        $msg = "<div class='alert alert-success mb-3'>อนุมัติการจองเรียบร้อย</div>";
-    }
-    $stmt->close();
-}
-if (isset($_POST['reject'])) {
-    $id = intval($_POST['reject']);
-    $stmt = $conn->prepare("UPDATE bookings SET status='rejected' WHERE id=?");
-    $stmt->bind_param("i", $id);
-    if ($stmt->execute()) {
-        $msg = "<div class='alert alert-danger mb-3'>ไม่อนุมัติการจองนี้</div>";
-    }
-    $stmt->close();
-}
-
-// ดึงรายการจองทั้งหมด
-$sql = "SELECT b.id, u.name AS user, v.model AS vehicle, b.start_date, b.end_date, b.reason, b.status
+// ดึงรายการจองของผู้ใช้
+$sql = "SELECT b.id, v.model AS vehicle, b.start_date, b.end_date, b.reason, b.status
         FROM bookings b
-        JOIN users u ON b.user_id = u.id
         JOIN vehicles v ON b.vehicle_id = v.id
+        WHERE b.user_id = $user_id
         ORDER BY b.created_at DESC";
 $result = $conn->query($sql);
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>การอนุมัติการจอง</title>
+    <title>รายการจองของฉัน | Car Booking App</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
@@ -49,31 +28,27 @@ $result = $conn->query($sql);
         .table th, .table td { vertical-align: middle; }
     </style>
 </head>
-<body>
+<body class="bg-light">
 <div class="container mt-5">
     <div class="card shadow">
         <div class="card-header bg-info text-white">
-            <h4 class="mb-0">การอนุมัติการจอง</h4>
+            <h4 class="mb-0">📋 รายการจองของฉัน</h4>
         </div>
         <div class="card-body">
-            <?= $msg ?>
             <table class="table table-bordered table-striped">
                 <thead class="thead-dark">
                     <tr>
-                        <th>ผู้จอง</th>
                         <th>รถยนต์</th>
                         <th>วันที่เริ่ม</th>
                         <th>วันที่สิ้นสุด</th>
                         <th>เหตุผล</th>
                         <th>สถานะ</th>
-                        <th>จัดการ</th>
                     </tr>
                 </thead>
                 <tbody>
                 <?php if ($result && $result->num_rows > 0): ?>
                     <?php while($row = $result->fetch_assoc()): ?>
                         <tr>
-                            <td><?= htmlspecialchars($row['user']) ?></td>
                             <td><?= htmlspecialchars($row['vehicle']) ?></td>
                             <td><?= htmlspecialchars($row['start_date']) ?></td>
                             <td><?= htmlspecialchars($row['end_date']) ?></td>
@@ -89,22 +64,10 @@ $result = $conn->query($sql);
                                     }
                                 ?>
                             </td>
-                            <td>
-                                <?php if ($row['status'] == 'pending'): ?>
-                                    <form method="post" style="display:inline;">
-                                        <button name="approve" value="<?= $row['id'] ?>" class="btn btn-success btn-sm" onclick="return confirm('อนุมัติการจองนี้?')">อนุมัติ</button>
-                                    </form>
-                                    <form method="post" style="display:inline;">
-                                        <button name="reject" value="<?= $row['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('ไม่อนุมัติการจองนี้?')">ไม่อนุมัติ</button>
-                                    </form>
-                                <?php else: ?>
-                                    <span class="text-muted">-</span>
-                                <?php endif; ?>
-                            </td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
-                    <tr><td colspan="7" class="text-center">ไม่มีรายการจอง</td></tr>
+                    <tr><td colspan="5" class="text-center">ไม่มีรายการจอง</td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>
@@ -112,5 +75,3 @@ $result = $conn->query($sql);
         </div>
     </div>
 </div>
-</body>
-</html>
